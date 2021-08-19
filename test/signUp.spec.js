@@ -98,6 +98,7 @@ describe('Sign Up', function() {
             console.log('Wrong code');
             console.log('Triying code 2...');
             await driver.findElement(By.name('confirmCode')).sendKeys(code2);
+            await driver.findElement(By.id('buttonConfirmCode')).click();
         }
         
         await driver.sleep(2000);
@@ -115,10 +116,54 @@ describe('Sign Up', function() {
             await driver.actions({ bridge: true }).move({origin: element}).perform()
         }
         
+        
+        console.log('Navigating to Settings...')
+        await driver.findElement(By.linkText('Settings')).click();
+        await driver.sleep(2000);
+        
+        //LOG OUT
+        await driver.findElement(By.css('body > div.row > div.col.hyper-nav > a:nth-child(7)')).click()
+        
+        //LOG IN
+        await driver.findElement(By.css('body > div.wrap > div.menu > div.menu__wrap.menu__wrapRight > div.menu__item.menu__dropdownTitle > a')).click()
+        await driver.findElement(By.name("phoneOrMailCheck")).click()
+        await driver.findElement(By.name("phoneOrMailCheck")).sendKeys(email)
+        {
+          const element = await driver.findElement(By.id("buttonCheckEmail"))
+          await driver.actions({ bridge: true }).moveToElement(element).perform()
+        }
+        await driver.findElement(By.id("buttonCheckEmail")).click()
+        {
+          const element = await driver.findElement(By.CSS_SELECTOR, "body")
+          await driver.actions({ bridge: true }).moveToElement(element, 0, 0).perform()
+        }
+        await driver.findElement(By.name("otpCheck")).click()
+        date = changeTimezone(new Date(), 'America/Toronto');
+
+        dateFirst = date.toJSON().split('T').join(' ').substr(0, 15);
+        dateSecond = (new Date(date.getTime() - 60 * 10 * 1000)).toJSON().split('T').join(' ').substr(0, 15);
+
+        code1 = generateCode(email, dateFirst);
+        code2 = generateCode(email, dateSecond);
+        await driver.findElement(By.name("otpCheck")).sendKeys(code1)
+        await driver.findElement(By.id("buttonCheckOtp")).click()
+        
+        await driver.findElement(By.id('buttonCheckOtp')).click();
+        
+        if (!!await driver.executeScript('return (document.querySelector("[class=\'error-message has--error\']") !== null)')) {
+            console.log('Wrong code');
+            console.log('Triying code 2...');
+            await driver.findElement(By.name('otpCheck')).sendKeys(code2);
+            await driver.findElement(By.id('buttonCheckOtp')).click();
+        }
+
+        await driver.findElement(By.linkText("Log out")).click()
+        //await driver.close()
+        
+        
         console.log('Navigating to Settings...')
         await driver.findElement(By.linkText('Settings')).click();
         
-        await driver.sleep(2000);
         
         await driver.findElement(By.linkText('Purge my account information')).click();
         
