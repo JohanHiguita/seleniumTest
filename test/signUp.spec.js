@@ -24,7 +24,7 @@ function generateCode(email, date, length = 4) {
 }
 
 describe('Sign Up', function() {
-    this.timeout(60000);
+    this.timeout(0);
     let driver;
     let vars;
 
@@ -72,8 +72,6 @@ describe('Sign Up', function() {
         
         await driver.findElement(By.name('phoneOrMailCheck')).click();
         await driver.findElement(By.name('phoneOrMailCheck')).sendKeys(email);
-
-        console.log('Typing email ', email, '...');
         
         await driver.findElement(By.id('buttonCheckEmail')).click();
 
@@ -97,6 +95,7 @@ describe('Sign Up', function() {
         if (!!await driver.executeScript('return (document.querySelector("[class=\'error-message has--error\']") !== null)')) {
             console.log('Wrong code');
             console.log('Triying code 2...');
+            await driver.findElement(By.name('confirmCode')).clear();
             await driver.findElement(By.name('confirmCode')).sendKeys(code2);
             await driver.findElement(By.id('buttonConfirmCode')).click();
         }
@@ -111,7 +110,6 @@ describe('Sign Up', function() {
         await driver.sleep(2000);
         
         {
-            console.log('Skipping pop up...');
             const element = await driver.findElement(By.css('.menu__dropdownTitle'))
             await driver.actions({ bridge: true }).move({origin: element}).perform()
         }
@@ -122,44 +120,48 @@ describe('Sign Up', function() {
         await driver.sleep(2000);
         
         //LOG OUT
+        console.log('Log out...');
         await driver.findElement(By.css('body > div.row > div.col.hyper-nav > a:nth-child(7)')).click()
         
         //LOG IN
-        await driver.findElement(By.css('body > div.wrap > div.menu > div.menu__wrap.menu__wrapRight > div.menu__item.menu__dropdownTitle > a')).click()
-        await driver.findElement(By.name("phoneOrMailCheck")).click()
-        await driver.findElement(By.name("phoneOrMailCheck")).sendKeys(email)
-        {
-          const element = await driver.findElement(By.id("buttonCheckEmail"))
-          await driver.actions({ bridge: true }).moveToElement(element).perform()
-        }
-        await driver.findElement(By.id("buttonCheckEmail")).click()
-        {
-          const element = await driver.findElement(By.CSS_SELECTOR, "body")
-          await driver.actions({ bridge: true }).moveToElement(element, 0, 0).perform()
-        }
-        await driver.findElement(By.name("otpCheck")).click()
+        console.log('Log in again...');
+        await driver.findElement(By.css('body > div.wrap > div.menu > div.menu__wrap.menu__wrapRight > div.menu__item.menu__dropdownTitle > a')).click();
+        
+        await driver.sleep(2000);
+        
+        console.log('Typing the email...');
+        await driver.findElement(By.name("phoneOrMailCheck")).click();
+        await driver.findElement(By.name("phoneOrMailCheck")).sendKeys(email);
+        await driver.findElement(By.id("buttonCheckEmail")).click();
+        
+        console.log('Generating login codes...');
         date = changeTimezone(new Date(), 'America/Toronto');
-
+        
         dateFirst = date.toJSON().split('T').join(' ').substr(0, 15);
         dateSecond = (new Date(date.getTime() - 60 * 10 * 1000)).toJSON().split('T').join(' ').substr(0, 15);
 
-        code1 = generateCode(email, dateFirst);
-        code2 = generateCode(email, dateSecond);
-        await driver.findElement(By.name("otpCheck")).sendKeys(code1)
-        await driver.findElement(By.id("buttonCheckOtp")).click()
+        code1 = generateCode(email, dateFirst, 6);
+        code2 = generateCode(email, dateSecond, 6);
         
-        await driver.findElement(By.id('buttonCheckOtp')).click();
+        console.log('Checking access code...');
+        await driver.findElement(By.name("otpCheck")).clear();
+        await driver.findElement(By.name("otpCheck")).sendKeys(code1);
+        await driver.findElement(By.id("buttonCheckOtp")).click()
         
         if (!!await driver.executeScript('return (document.querySelector("[class=\'error-message has--error\']") !== null)')) {
             console.log('Wrong code');
             console.log('Triying code 2...');
+            await driver.findElement(By.name("otpCheck")).clear();
             await driver.findElement(By.name('otpCheck')).sendKeys(code2);
             await driver.findElement(By.id('buttonCheckOtp')).click();
         }
-
-        await driver.findElement(By.linkText("Log out")).click()
-        //await driver.close()
         
+        await driver.sleep(2000);
+        
+        {
+            const element = await driver.findElement(By.css('.menu__dropdownTitle'))
+            await driver.actions({ bridge: true }).move({origin: element}).perform()
+        }
         
         console.log('Navigating to Settings...')
         await driver.findElement(By.linkText('Settings')).click();
@@ -168,9 +170,8 @@ describe('Sign Up', function() {
         await driver.findElement(By.linkText('Purge my account information')).click();
         
         await driver.sleep(2000);
-
-        await driver.findElement(By.name('submit')).click();
         
-        // await done();
+        console.log('Purging the account...');
+        await driver.findElement(By.name('submit')).click();
     });
 });
